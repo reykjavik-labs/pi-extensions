@@ -1,0 +1,48 @@
+# Release Version
+name: Release Version
+
+on:
+  # Trigger on pushes to the main branch
+  push: 
+    branches:
+    - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  actions: read
+
+jobs:
+  # Lint
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DavidAnson/markdownlint-cli2-action@v23
+        with:
+          config: .markdownlint-cli2.jsonc
+
+  # Release the new versions
+  release-version:
+      name: Release Semantic Version
+      needs: [lint]
+      runs-on: ubuntu-latest
+      outputs:
+          new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+          new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      steps:
+      - name: Setup | Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Action | Create Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+
+  
