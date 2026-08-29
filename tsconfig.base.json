@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"baseUrl": ".",
+		"paths": {
+			"@reykjavik-labs/pi-status-footer": [
+				"packages/pi-status-footer/src/*.ts"
+			],
+			"@reykjavik-labs/pi-image-router": ["packages/pi-image-router/src/*"]
+		},
+		"lib": ["ES2022"],
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": true,
+		"noEmit": true,
+		"noUncheckedIndexedAccess": true,
+		"types": ["bun"]
+	},
+	"include": [
+		"packages/*/src/**/*.ts",
+		"packages/*/test/**/*.ts",
+		"packages/*/tests/**/*.ts",
+		"scripts/**/*.ts"
+	],
+	"exclude": ["**/node_modules/**", "**/dist/**"]
+}

@@ -1,0 +1,30 @@
+{
+    "config": {
+        "default": true,
+        "MD013": false,
+        "MD024": {
+            "siblings_only": true
+        },
+        "MD033": false,
+        "MD042": false,
+        "MD007": {
+            "indent": 4
+        },
+        "MD036": false,
+        "MD041": false,
+        "MD040": false,
+        "MD060": false,
+        "MD025": {
+            "allow_code": true
+        }
+    },
+    "ignores": [
+        ".github/CODEOWNERS",
+        "**/node_modules/**"
+    ],
+    "outputFormatters": [
+        [
+            "markdownlint-cli2-formatter-pretty"
+        ]
+    ]
+}

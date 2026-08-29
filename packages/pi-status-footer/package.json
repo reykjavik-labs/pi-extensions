@@ -1,0 +1,30 @@
+{
+	"name": "pi-status-footer",
+	"version": "0.0.0",
+	"description": "Pi extension — status bar footer (model, tokens, git, TPS)",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./extension": "./src/extension.ts"
+	},
+	"scripts": {
+		"test": "bun test"
+	},
+	"files": [
+		"src",
+		"README.md"
+	],
+	"pi": {
+		"extensions": [
+			"./src/extension.ts"
+		]
+	},
+	"dependencies": {
+		"@xynogen/pix-data": "0.4.3",
+		"@xynogen/pix-pretty": "1.18.0"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"name": "image-router",
+	"devDependencies": {
+		"@types/node": "26.2.0"
+	},
+	"dependencies": {},
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		]
+	}
+}
