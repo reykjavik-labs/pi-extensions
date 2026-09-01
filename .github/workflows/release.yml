@@ -25,8 +25,8 @@ jobs:
         with:
           config: .markdownlint-cli2.jsonc
 
-  # Typecheck and tests
-  check:
+  # Test
+  test:
     name: Typecheck and Test
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +41,7 @@ jobs:
   # Release the new versions
   release-version:
       name: Release Semantic Version
-      needs: [lint, check]
+      needs: [lint, test]
       runs-on: ubuntu-latest
       outputs:
           new_release_published: ${{ steps.semantic.outputs.new_release_published }}

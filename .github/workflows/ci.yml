@@ -24,8 +24,8 @@ jobs:
         with:
           config: .markdownlint-cli2.jsonc
 
-  # Typecheck and tests
-  check:
+  # Test
+  test:
     name: Typecheck and Test
     runs-on: ubuntu-latest
     steps:
