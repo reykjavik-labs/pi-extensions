@@ -20,6 +20,13 @@
 				}
 			}
 		],
+		"@semantic-release/release-notes-generator",
+		[
+			"@semantic-release/npm",
+			{
+				"npmPublish": true
+			}
+		],
 		"@semantic-release/github"
 	],
 	"tagFormat": "v${version}"

@@ -25,10 +25,23 @@ jobs:
         with:
           config: .markdownlint-cli2.jsonc
 
+  # Typecheck and tests
+  check:
+    name: Typecheck and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+
   # Release the new versions
   release-version:
       name: Release Semantic Version
-      needs: [lint]
+      needs: [lint, check]
       runs-on: ubuntu-latest
       outputs:
           new_release_published: ${{ steps.semantic.outputs.new_release_published }}
@@ -43,6 +56,4 @@ jobs:
         uses: cycjimmy/semantic-release-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
-
-  
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
