@@ -4,10 +4,12 @@ Auto-routes prompts containing user-attached images to a configured
 `imageReaderModel`, then switches back to the previous model when the
 image-bearing turn ends.
 
-## Install
-
-The extension is registered in the root `package.json` under
-`pi.extensions`. Pi loads it automatically when the project is trusted.
+> **Status: scaffolded, opt-in.** This extension is shipped in the package
+> but is **not registered** in `pi.extensions` (it was unregistered in a
+> past change because it was unmaintained). To enable it, add
+> `"./src/extensions/image-router/index.ts"` to the `pi.extensions` array
+> in `package.json`, publish a new version, and reinstall. Verify it
+> against the current Pi extension API before enabling.
 
 ## Configure
 
