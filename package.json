@@ -43,8 +43,7 @@
 	},
 	"pi": {
 		"extensions": [
-			"./packages/pi-status-footer",
-			"./packages/pi-image-router"
+			"./packages/pi-status-footer"
 		]
 	}
 }
