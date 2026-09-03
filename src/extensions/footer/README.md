@@ -15,12 +15,44 @@ mode) are surfaced as additional segments on the right. Requires
 `@xynogen/pix-data` as a dependency.
 
 No configuration required — the footer activates when the session starts.
+The layout is responsive and self-adjusts to the terminal width.
 
 ## Layout
+
+Single line, used while the stable content fits the terminal width:
 
 ```text
 [MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· ctxK · $in/$out] [| status…] [| N t/s]
 ```
+
+Stacked, one section per line, used when the single line would overflow
+(e.g. a narrow/mobile terminal):
+
+```text
+[MODE]
+~/cwd (branch *±⇡n⇣n) +n ~n ?n ⇡n ⇣n
+ctx%/ctxk ⇡in ⇣out [$cost]
+model [· thinking] [· ctxK · $in/$out] [| N t/s]
+status…
+```
+
+In the stacked layout every section keeps its own full-width line, so no
+section is ever truncated. Extension statuses share one line when they fit
+and spill to one line per status when they do not.
+
+### Responsive switching
+
+- The single line is composed from the *stable* sections only — mode,
+  location, git, context usage, model, and extension statuses. The transient
+  token/TPS counters never participate in the fit test, so the layout never
+  reflows while they appear and decay during/after a stream.
+- If the stable line fits the terminal width, the footer stays on one line
+  (with the token and TPS counters appended, as today).
+- If it does not fit, the footer switches to the stacked layout above.
+- Collapsing back to the single line requires the stable line to fit with an
+  8-column margin (`LAYOUT_HYSTERESIS` in `src/footer.ts`), so content that
+  hovers near the boundary (growing context %, git marker changes) does not
+  flip the layout back and forth.
 
 ## Context usage coloring
 
@@ -34,7 +66,8 @@ model's context window:
 | `< 100k` | `pct < 40%` | `40% ≤ pct ≤ 70%` | `pct > 70%` |
 
 Token count and percentage always share the same color. Thresholds are
-hardcoded module constants (`CTX_*` in `src/footer.ts`).
+hardcoded module constants (`CTX_*` in `src/footer.ts`). Layout thresholds
+are the `LAYOUT_HYSTERESIS` constant in the same file.
 
 **Reference:** the 40%-rule / smart-zone-dumb-zone heuristic is described in
 ["La regla del 40 % de contexto: dónde vive la inteligencia de un LLM"](https://23people.io/blog/regla-40-contexto-smart-zone-dumb-zone/)

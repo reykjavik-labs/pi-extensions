@@ -1,14 +1,26 @@
 /**
- * Footer extension — pure-prompt style.
+ * Footer extension — pure-prompt style, responsive layout.
  *
- * Layout:
+ * Wide layout (single line, when the stable content fits):
  *   [MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· ctxK · $in/$out] [| status…] [| N t/s]
+ *
+ * Narrow layout (stacked, when the stable content overflows the terminal):
+ *   [MODE]
+ *   ~/cwd (branch *±⇡n⇣n) +n ~n ?n ⇡n ⇣n
+ *   ctx%/ctxk ⇡in ⇣out [$cost]
+ *   model [· thinking] [· ctxK · $in/$out] [| N t/s]
+ *   status…
  *
  * - Branch shown with zsh-style dirty/ahead/behind markers.
  * - TPS: live during stream, holds 5s after turn ends, then clears.
  * - Model spec (ctx · cost) sourced from ~/.cache/pi/models-dev.json.
  * - Extension statuses surfaced via footerData.getExtensionStatuses();
  *   "plan" is rendered as the leftmost segment, others appended after model.
+ * - Responsive: the single line is used only while the *stable* sections
+ *   (mode, location, git, context, model, statuses — never the transient
+ *   tokens/TPS) fit the width; otherwise each section stacks on its own
+ *   line so nothing truncates. Hysteresis (LAYOUT_HYSTERESIS) prevents
+ *   flapping near the boundary.
  */
 
 import { execFile } from "node:child_process";
@@ -21,7 +33,7 @@ import type {
 	ExtensionAPI,
 	ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
-import { truncateToWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { ModelsDevModel } from "@xynogen/pix-data";
 import {
 	benchScoreColor,
@@ -30,6 +42,80 @@ import {
 } from "@xynogen/pix-data";
 import { icon } from "@xynogen/pix-pretty/icon-catalog";
 import { fmtTokenCount } from "@xynogen/pix-pretty/widget-format";
+
+// ─── Responsive layout helpers ────────────────────────────────────────
+
+/** Layout modes for the footer. */
+export type FooterLayoutMode = "single" | "stacked";
+
+/** Slack (in columns) before a stacked footer collapses back to a single line. */
+export const LAYOUT_HYSTERESIS = 8;
+
+/**
+ * Pick the layout mode from the previous mode (hysteresis), the terminal
+ * width, and the visible width of the stable single-line composition.
+ * Transient sections (tokens, TPS) never participate in the fit test, so the
+ * layout does not reflow while streaming.
+ */
+export function decideLayout(
+	prev: FooterLayoutMode,
+	width: number,
+	stableWidth: number,
+): FooterLayoutMode {
+	if (prev === "stacked") {
+		return stableWidth + LAYOUT_HYSTERESIS <= width ? "single" : "stacked";
+	}
+	return stableWidth > width ? "stacked" : "single";
+}
+
+/** Per-section row content for the stacked layout (empty fields skipped). */
+export interface StackedFooterParts {
+	mode?: string;
+	/** cwd + branch segment, always present. */
+	loc: string;
+	/** git dirty/ahead/behind markers, pre-joined. */
+	markers?: string;
+	/** context usage block. */
+	ctxUsage?: string;
+	/** tokens + session cost (transient visibility). */
+	tokens?: string;
+	/** model + thinking + benchmark segment, always present. */
+	model: string;
+	/** live TPS value, pre-styled. */
+	tps?: string;
+	/** compacted extension statuses, one entry per status. */
+	statuses: string[];
+}
+
+/**
+ * Build the stacked (multi-line) footer. Each section gets its own row so
+ * nothing is truncated on narrow terminals. Extension statuses share one row
+ * when they fit; verbose sets spill onto one row per status. Rows are guarded
+ * with per-row truncation as an absolute last resort.
+ */
+export function buildStackedFooter(
+	parts: StackedFooterParts,
+	width: number,
+	sep: string,
+): string[] {
+	const rows: string[] = [];
+	if (parts.mode) rows.push(parts.mode);
+	rows.push(parts.loc + (parts.markers ? ` ${parts.markers}` : ""));
+	const ctxRow = parts.ctxUsage
+		? parts.ctxUsage + (parts.tokens ? ` ${parts.tokens}` : "")
+		: (parts.tokens ?? "");
+	if (ctxRow) rows.push(ctxRow);
+	rows.push(parts.model + (parts.tps ? ` ${parts.tps}` : ""));
+	if (parts.statuses.length > 0) {
+		const joined = parts.statuses.join(sep);
+		if (visibleWidth(joined) <= width) {
+			rows.push(joined);
+		} else {
+			rows.push(...parts.statuses);
+		}
+	}
+	return rows.map((row) => truncateToWidth(row, width));
+}
 
 // ─── Pure formatting helpers ─────────────────────────────────────────
 
@@ -335,13 +421,12 @@ export function compactStatus(
 	}
 }
 
-/** Pull mode out of extension statuses; return (modePart, otherParts joined). */
+/** Pull mode out of extension statuses; return (mode, compacted others). */
 function renderStatuses(
 	statuses: ReadonlyMap<string, string>,
-	sep: string,
 	theme: Theme,
-): { modePart: string; otherPart: string } {
-	const mode = statuses.get("plan") ?? statuses.get("phase");
+): { mode: string | null; others: string[] } {
+	const mode = statuses.get("plan") ?? statuses.get("phase") ?? null;
 	const ORDER = ["mcp", "pi-lens-lsp", "caveman"];
 	const seen = new Set<string>(["plan", "phase"]);
 	const others: string[] = [];
@@ -355,15 +440,13 @@ function renderStatuses(
 		if (seen.has(k) || !v) continue;
 		others.push(compactStatus(k, v, theme));
 	}
-	return {
-		modePart: mode ? `${mode}${sep}` : "",
-		otherPart: others.length ? sep + others.join(sep) : "",
-	};
+	return { mode, others };
 }
 
 // ─── Extension ────────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
+	let layout: FooterLayoutMode = "single";
 	let liveTps: string | null = null;
 	let tpsTimer: ReturnType<typeof setTimeout> | null = null;
 	// Token visibility state machine: "on" → (4s) → "dim" → (4s) → "off".
@@ -557,19 +640,42 @@ export default function (pi: ExtensionAPI) {
 							gitStatus,
 							theme,
 						);
-						const { modePart, otherPart } = renderStatuses(
+						const { mode, others } = renderStatuses(
 							footerData.getExtensionStatuses(),
-							sep,
 							theme,
 						);
 
 						const loc = theme.fg("accent", shortCwd(ctx.cwd)) + branchSeg;
+						const modePart = mode ? `${mode}${sep}` : "";
+						const otherPart = others.length ? sep + others.join(sep) : "";
 						const markersPart = markersSeg ? sep + markersSeg : "";
 						const tpsPart = liveTps ? sep + theme.fg("accent", liveTps) : "";
 
 						const tokensPart = tokens ? sep + tokens : "";
 						const ctxPart = ctxUsage ? sep + ctxUsage : "";
-						const line = `${modePart}${loc}${markersPart}${ctxPart}${sep}${model}${otherPart}${tokensPart}${tpsPart}`;
+
+						// Responsive: the fit test uses the stable sections only
+						// (mode, location, git, context, model, statuses) so the layout
+						// never reflows while tokens/TPS appear and decay.
+						const stableLine = `${modePart}${loc}${markersPart}${ctxPart}${sep}${model}${otherPart}`;
+						layout = decideLayout(layout, width, visibleWidth(stableLine));
+						if (layout === "stacked") {
+							return buildStackedFooter(
+								{
+									mode: mode ?? undefined,
+									loc,
+									markers: markersSeg || undefined,
+									ctxUsage: ctxUsage || undefined,
+									tokens: tokens || undefined,
+									model,
+									tps: liveTps ? theme.fg("accent", liveTps) : undefined,
+									statuses: others,
+								},
+								width,
+								sep,
+							);
+						}
+						const line = `${stableLine}${tokensPart}${tpsPart}`;
 						return [truncateToWidth(line, width)];
 					},
 				};
