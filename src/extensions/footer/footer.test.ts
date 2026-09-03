@@ -1,12 +1,94 @@
 import { describe, expect, test } from "bun:test";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { icon } from "@xynogen/pix-pretty/icon-catalog";
-import { compactStatus, ctxColor, renderThinkingLevel } from "./footer.ts";
+import {
+	buildStackedFooter,
+	compactStatus,
+	ctxColor,
+	decideLayout,
+	renderThinkingLevel,
+} from "./footer.ts";
 
 const theme = {
 	fg: (_color: string, text: string) => text,
 	getThinkingBorderColor: (level: string) => (text: string) =>
 		`<${level}>${text}</${level}>`,
 };
+
+describe("decideLayout", () => {
+	test("stays single while the stable line fits", () => {
+		expect(decideLayout("single", 100, 80)).toBe("single");
+		expect(decideLayout("single", 100, 100)).toBe("single"); // exact fit
+	});
+
+	test("stacks when the stable line overflows", () => {
+		expect(decideLayout("single", 100, 101)).toBe("stacked");
+	});
+
+	test("stays stacked until the stable line fits with slack", () => {
+		// 92 + 8 margin = 100 -> collapses only at the margin boundary
+		expect(decideLayout("stacked", 100, 92)).toBe("single");
+		expect(decideLayout("stacked", 100, 93)).toBe("stacked");
+		expect(decideLayout("stacked", 100, 101)).toBe("stacked");
+	});
+
+	test("collapses immediately when plenty of room appears", () => {
+		expect(decideLayout("stacked", 200, 100)).toBe("single");
+	});
+});
+
+describe("buildStackedFooter", () => {
+	const sep = " | ";
+	const parts = {
+		loc: "~/repo (main)",
+		markers: "+1 ~2 ?3",
+		ctxUsage: "1.2k/200k (1%)",
+		tokens: "⇡12k ⇣3k $0.04",
+		model: "sonnet (high) · 8/10",
+		tps: "142 t/s",
+		statuses: ["mcp 3/4", "lsp 3"],
+	};
+
+	test("puts every section on its own row, mode on top", () => {
+		expect(buildStackedFooter({ ...parts, mode: "plan" }, 120, sep)).toEqual([
+			"plan",
+			"~/repo (main) +1 ~2 ?3",
+			"1.2k/200k (1%) ⇡12k ⇣3k $0.04",
+			"sonnet (high) · 8/10 142 t/s",
+			"mcp 3/4 | lsp 3",
+		]);
+	});
+
+	test("drops empty optional sections", () => {
+		expect(
+			buildStackedFooter(
+				{
+					loc: "~/repo (main)",
+					model: "sonnet (high) · 8/10",
+					statuses: [],
+				},
+				120,
+				sep,
+			),
+		).toEqual(["~/repo (main)", "sonnet (high) · 8/10"]);
+	});
+
+	test("splits statuses onto one row each when they do not fit together", () => {
+		const verbose = {
+			...parts,
+			statuses: ["mcp 3/4", "lsp 3", "custom very verbose status"],
+		};
+		expect(buildStackedFooter(verbose, 40, sep).slice(3)).toEqual(
+			verbose.statuses,
+		);
+	});
+
+	test("never emits a row wider than the terminal", () => {
+		for (const row of buildStackedFooter({ ...parts, statuses: [] }, 20, sep)) {
+			expect(visibleWidth(row)).toBeLessThanOrEqual(20);
+		}
+	});
+});
 
 describe("renderThinkingLevel", () => {
 	test("uses the host theme's canonical thinking-level renderer", () => {
