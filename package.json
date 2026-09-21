@@ -15,7 +15,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"typecheck": "tsc --noEmit -p tsconfig.base.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "bun test",
 		"lint": "bun run lint:biome && bun run lint:markdown",
 		"lint:biome": "biome check . --write",
@@ -56,7 +56,8 @@
 	},
 	"pi": {
 		"extensions": [
-			"./src/extensions/footer/index.ts"
+			"./src/extensions/footer/index.ts",
+			"./src/extensions/prompt-audit/index.ts"
 		]
 	}
 }

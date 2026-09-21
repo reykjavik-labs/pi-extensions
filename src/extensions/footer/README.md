@@ -9,10 +9,9 @@ current mode, working directory with git branch (including dirty/ahead/behind
 markers), cumulative session token counts (in/out), context usage percentage,
 session cost, and active model name. During a streaming response it displays
 live tokens-per-second (TPS), holding the last value for 4 seconds after the
-turn ends. Model spec (context window, pricing) is sourced from
-`~/.cache/pi/models-dev.json` via `pix-data`. Extension statuses (e.g. plan
-mode) are surfaced as additional segments on the right. Requires
-`@xynogen/pix-data` as a dependency.
+turn ends. Extension statuses (e.g. plan mode) are surfaced as additional
+segments on the right. Model benchmark scores are sourced via `pix-data`.
+Requires `@xynogen/pix-data` as a dependency.
 
 No configuration required — the footer activates when the session starts.
 The layout is responsive and self-adjusts to the terminal width.
@@ -22,7 +21,7 @@ The layout is responsive and self-adjusts to the terminal width.
 Single line, used while the stable content fits the terminal width:
 
 ```text
-[MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· ctxK · $in/$out] [| status…] [| N t/s]
+[MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· score] [| status…] [| N t/s]
 ```
 
 Stacked, one section per line, used when the single line would overflow
@@ -32,7 +31,7 @@ Stacked, one section per line, used when the single line would overflow
 [MODE]
 ~/cwd (branch *±⇡n⇣n) +n ~n ?n ⇡n ⇣n
 ctx%/ctxk ⇡in ⇣out [$cost]
-model [· thinking] [· ctxK · $in/$out] [| N t/s]
+model [· thinking] [· score] [| N t/s]
 status…
 ```
 
@@ -40,12 +39,39 @@ In the stacked layout every section keeps its own full-width line, so no
 section is ever truncated. Extension statuses share one line when they fit
 and spill to one line per status when they do not.
 
+### Configuration
+
+The layout mode is controlled by `footer.layout` in pi's settings files:
+
+```json
+{
+  "footer": {
+    "layout": "auto"
+  }
+}
+```
+
+| Value | Behavior |
+|---|---|
+| `auto` (default) | Responsive: single line while it fits, otherwise stacked. |
+| `single` | Always one line; content wider than the terminal is truncated. |
+| `stacked` | Always the multi-line layout, one section per row. |
+
+The setting is read once per session from the global file
+(`~/.pi/agent/settings.json`) and, when the project is trusted, the project
+file (`.pi/settings.json`); the project value overrides the global one. An
+absent key resolves to `auto`. An invalid value or malformed JSON is ignored,
+falls back to the next source (or `auto`), and shows a one-time warning at
+session start. Changing the value takes effect on the next session.
+
 ### Responsive switching
 
 - The single line is composed from the *stable* sections only — mode,
   location, git, context usage, model, and extension statuses. The transient
   token/TPS counters never participate in the fit test, so the layout never
   reflows while they appear and decay during/after a stream.
+- This applies to `auto` only; `single` and `stacked` force the mode and skip
+  the fit test and hysteresis entirely.
 - If the stable line fits the terminal width, the footer stays on one line
   (with the token and TPS counters appended, as today).
 - If it does not fit, the footer switches to the stacked layout above.
