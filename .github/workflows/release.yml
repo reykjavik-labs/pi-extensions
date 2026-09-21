@@ -20,7 +20,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: DavidAnson/markdownlint-cli2-action@v23
         with:
           config: .markdownlint-cli2.jsonc
@@ -30,7 +30,7 @@ jobs:
     name: Typecheck and Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -48,7 +48,7 @@ jobs:
           new_release_version: ${{ steps.semantic.outputs.new_release_version }}
       steps:
       - name: Setup | Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Action | Create Release
