@@ -2,18 +2,18 @@
  * Footer extension — pure-prompt style, responsive layout.
  *
  * Wide layout (single line, when the stable content fits):
- *   [MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· ctxK · $in/$out] [| status…] [| N t/s]
+ *   [MODE] | ~/cwd (branch *±⇡n⇣n) | ⇡in ⇣out [Rcache] [ctx%/ctxk] [$cost] | model [· thinking] [· score] [| status…] [| N t/s]
  *
  * Narrow layout (stacked, when the stable content overflows the terminal):
  *   [MODE]
  *   ~/cwd (branch *±⇡n⇣n) +n ~n ?n ⇡n ⇣n
  *   ctx%/ctxk ⇡in ⇣out [$cost]
- *   model [· thinking] [· ctxK · $in/$out] [| N t/s]
+ *   model [· thinking] [· score] [| N t/s]
  *   status…
  *
  * - Branch shown with zsh-style dirty/ahead/behind markers.
  * - TPS: live during stream, holds 5s after turn ends, then clears.
- * - Model spec (ctx · cost) sourced from ~/.cache/pi/models-dev.json.
+ * - Model benchmark score sourced via pix-data lookupBenchmark.
  * - Extension statuses surfaced via footerData.getExtensionStatuses();
  *   "plan" is rendered as the leftmost segment, others appended after model.
  * - Responsive: the single line is used only while the *stable* sections
@@ -21,6 +21,9 @@
  *   tokens/TPS) fit the width; otherwise each section stacks on its own
  *   line so nothing truncates. Hysteresis (LAYOUT_HYSTERESIS) prevents
  *   flapping near the boundary.
+ * - Layout mode is configurable via `footer.layout` in pi's settings files
+ *   ("auto" default, "single", "stacked"); see settings.ts. "single" and
+ *   "stacked" force the mode and bypass the responsive fit test.
  */
 
 import { execFile } from "node:child_process";
@@ -34,14 +37,10 @@ import type {
 	ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import type { ModelsDevModel } from "@xynogen/pix-data";
-import {
-	benchScoreColor,
-	lookupBenchmark,
-	lookupModelsDev,
-} from "@xynogen/pix-data";
+import { benchScoreColor, lookupBenchmark } from "@xynogen/pix-data";
 import { icon } from "@xynogen/pix-pretty/icon-catalog";
 import { fmtTokenCount } from "@xynogen/pix-pretty/widget-format";
+import { type FooterLayoutSetting, readFooterLayout } from "./settings.ts";
 
 // ─── Responsive layout helpers ────────────────────────────────────────
 
@@ -66,6 +65,20 @@ export function decideLayout(
 		return stableWidth + LAYOUT_HYSTERESIS <= width ? "single" : "stacked";
 	}
 	return stableWidth > width ? "stacked" : "single";
+}
+
+/**
+ * Effective layout for one frame. "auto" delegates to `decideLayout` (keeping
+ * its hysteresis via `prev`); a forced mode ignores the terminal width.
+ */
+export function resolveLayoutMode(
+	setting: FooterLayoutSetting,
+	prev: FooterLayoutMode,
+	width: number,
+	stableWidth: number,
+): FooterLayoutMode {
+	if (setting === "auto") return decideLayout(prev, width, stableWidth);
+	return setting;
 }
 
 /** Per-section row content for the stacked layout (empty fields skipped). */
@@ -151,15 +164,6 @@ const shortCwd = (cwd: string): string => {
 	const base = cwd.split("/").filter(Boolean).pop();
 	return base ?? cwd;
 };
-
-function fmtCost(entry: ModelsDevModel | undefined): string {
-	const costIn = entry?.cost?.input ?? 0;
-	const costOut = entry?.cost?.output ?? 0;
-	if (costIn === 0 && costOut === 0) return "free";
-	const fmt = (n: number) =>
-		Number.isInteger(n) ? `${n}` : n.toFixed(2).replace(/\.?0+$/, "");
-	return `$ ${fmt(costIn)}/${fmt(costOut)}`;
-}
 
 // ────────────────────────────────────────────────────────────────────
 
@@ -333,7 +337,7 @@ function renderBranch(
 	return { branchSeg, markersSeg: markers.join(" ") };
 }
 
-/** "<modelId> [· thinking] [· ctxK · $in/$out]" */
+/** "<modelId> [· thinking] [· score]" */
 function renderModel(
 	model: { id?: string; provider?: string; name?: string } | undefined,
 	thinking: string,
@@ -341,7 +345,6 @@ function renderModel(
 ): string {
 	const rawId = model?.id ?? "?";
 	const id = rawId.replace(/^[a-z]+\//i, "");
-	const provider = model?.provider ?? "";
 	let out = theme.fg("accent", id);
 	const THINK_ABBR: Record<string, string> = {
 		minimal: "min",
@@ -357,12 +360,6 @@ function renderModel(
 			theme.fg("muted", " (") +
 			renderThinkingLevel(theme, thinking, abbr) +
 			theme.fg("muted", ")");
-	}
-	if (provider && id !== "?") {
-		const dev = lookupModelsDev(provider, id);
-		const costStr = fmtCost(dev);
-		// color the $ and numbers green, separator muted
-		//out += theme.fg("muted", " · ") + theme.fg("success", costStr);
 	}
 	const bench = lookupBenchmark(id);
 	if (bench) {
@@ -447,6 +444,8 @@ function renderStatuses(
 
 export default function (pi: ExtensionAPI) {
 	let layout: FooterLayoutMode = "single";
+	// User-selected mode from `footer.layout`; read once per session.
+	let layoutSetting: FooterLayoutSetting = "auto";
 	let liveTps: string | null = null;
 	let tpsTimer: ReturnType<typeof setTimeout> | null = null;
 	// Token visibility state machine: "on" → (4s) → "dim" → (4s) → "off".
@@ -600,6 +599,12 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", (_event, ctx) => {
 		currentCwd = ctx.cwd;
+		const { layout: configured, warning } = readFooterLayout({
+			cwd: ctx.cwd,
+			projectTrusted: ctx.isProjectTrusted(),
+		});
+		layoutSetting = configured;
+		if (warning) ctx.ui.notify(warning, "warning");
 		void refreshGit(currentCwd);
 		if (gitTimer) clearInterval(gitTimer);
 		gitTimer = setInterval(() => {
@@ -658,8 +663,14 @@ export default function (pi: ExtensionAPI) {
 						// (mode, location, git, context, model, statuses) so the layout
 						// never reflows while tokens/TPS appear and decay.
 						const stableLine = `${modePart}${loc}${markersPart}${ctxPart}${sep}${model}${otherPart}`;
-						layout = decideLayout(layout, width, visibleWidth(stableLine));
-						if (layout === "stacked") {
+						const effectiveMode = resolveLayoutMode(
+							layoutSetting,
+							layout,
+							width,
+							visibleWidth(stableLine),
+						);
+						if (layoutSetting === "auto") layout = effectiveMode;
+						if (effectiveMode === "stacked") {
 							return buildStackedFooter(
 								{
 									mode: mode ?? undefined,

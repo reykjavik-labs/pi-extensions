@@ -7,6 +7,7 @@ import {
 	ctxColor,
 	decideLayout,
 	renderThinkingLevel,
+	resolveLayoutMode,
 } from "./footer.ts";
 
 const theme = {
@@ -34,6 +35,22 @@ describe("decideLayout", () => {
 
 	test("collapses immediately when plenty of room appears", () => {
 		expect(decideLayout("stacked", 200, 100)).toBe("single");
+	});
+});
+
+describe("resolveLayoutMode", () => {
+	test("auto delegates to the responsive fit test and its hysteresis", () => {
+		expect(resolveLayoutMode("auto", "single", 100, 80)).toBe("single");
+		expect(resolveLayoutMode("auto", "single", 100, 120)).toBe("stacked");
+		expect(resolveLayoutMode("auto", "stacked", 100, 92)).toBe("single");
+		expect(resolveLayoutMode("auto", "stacked", 100, 93)).toBe("stacked");
+	});
+
+	test("forced modes ignore the terminal width entirely", () => {
+		expect(resolveLayoutMode("single", "stacked", 999, 1)).toBe("single");
+		expect(resolveLayoutMode("single", "single", 10, 999)).toBe("single");
+		expect(resolveLayoutMode("stacked", "single", 999, 1)).toBe("stacked");
+		expect(resolveLayoutMode("stacked", "stacked", 10, 999)).toBe("stacked");
 	});
 });
 
