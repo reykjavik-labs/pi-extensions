@@ -2,10 +2,7 @@
 	"name": "@reykjavik-labs/pi-extensions",
 	"version": "0.0.0",
 	"description": "Extensions for the Pi Coding Agent: status-bar footer, model routing for image prompts, and a scaffold for more",
-	"repository": {
-		"type": "git",
-		"url": "git@github.com:reykjavik-labs/pi-extensions.git"
-	},
+	"repository": "https://github.com/reykjavik-labs/pi-extensions.git",
 	"type": "module",
 	"files": [
 		"src",
