@@ -18,6 +18,9 @@
             "allow_code": true
         }
     },
+    "globs": [
+        "**/*.md"
+    ],
     "ignores": [
         ".github/CODEOWNERS",
         "**/node_modules/**"

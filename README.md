@@ -19,7 +19,7 @@ Restart Pi (or run `/reload`) after installing.
 ## Extensions
 
 - [`footer`](src/extensions/footer/README.md) — status bar: model, tokens, git, TPS, context usage. No config. Active by default.
-- [`prompt-audit`](src/extensions/prompt-audit/README.md) 
+- [`prompt-audit`](src/extensions/prompt-audit/README.md) - reports the generated system prompt, loaded skills, and context usage. No config. Active by default.
 
 ## Usage
 

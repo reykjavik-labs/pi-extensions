@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Why
 
-A single npm package (`@reykjavik-labs/pi-extensions`) that ships Pi Coding Agent extensions. Each extension adds behavior to the Pi TUI or agent runtime: a status-bar footer (active) and automatic model routing for image-bearing prompts (scaffolded, opt-in).
+A single npm package (`@reykjavik-labs/pi-extensions`) that ships Pi Coding Agent extensions. Each extension adds behavior to the Pi TUI or agent runtime: a status-bar footer and a system-prompt auditor, both active.
 
 ## What
 
@@ -12,7 +12,7 @@ A single npm package (`@reykjavik-labs/pi-extensions`) that ships Pi Coding Agen
 - **Pi APIs**: `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `@earendil-works/pi-ai`.
 
 - `src/extensions/footer/` — TUI status bar (model, tokens, git, TPS, context usage). Registered in `pi.extensions`.
-- `src/extensions/image-router/` — switches models when a prompt has attached images. Scaffolded, **not registered** (opt-in).
+- `src/extensions/prompt-audit/` — inspects the generated system prompt, loaded skills, and context usage; writes a report on demand. Registered in `pi.extensions`.
 - `.github/workflows/` — CI lint/typecheck/test on PRs; semantic-release + npm publish on main.
 
 ## How
@@ -46,4 +46,4 @@ Merging to `main` runs `.github/workflows/release.yml`: lint + typecheck + test,
 ## Reference
 
 - `src/extensions/footer/README.md` — footer layout, context-coloring thresholds, Nerd Font requirement
-- `src/extensions/image-router/README.md` — routing behavior, settings precedence, limitations
+- `src/extensions/prompt-audit/README.md` — commands, report contents, generated files
