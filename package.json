@@ -54,7 +54,8 @@
 	"pi": {
 		"extensions": [
 			"./src/extensions/footer/index.ts",
-			"./src/extensions/prompt-audit/index.ts"
+			"./src/extensions/prompt-audit/index.ts",
+			"./src/extensions/context-view/index.ts"
 		]
 	}
 }
