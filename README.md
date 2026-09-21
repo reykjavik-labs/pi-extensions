@@ -19,7 +19,7 @@ Restart Pi (or run `/reload`) after installing.
 ## Extensions
 
 - [`footer`](src/extensions/footer/README.md) — status bar: model, tokens, git, TPS, context usage. No config. Active by default.
-- [`image-router`](src/extensions/image-router/README.md) — switches to a configured `imageReaderModel` when a prompt has images. Scaffolded but **not registered**; see its README to enable.
+- [`prompt-audit`](src/extensions/prompt-audit/README.md) - reports the generated system prompt, loaded skills, and context usage. No config. Active by default.
 
 ## Usage
 
@@ -27,15 +27,9 @@ Restart Pi (or run `/reload`) after installing.
 
 No configuration — the footer appears on session start. Icons require a Nerd Font in your terminal.
 
-### image-router (opt-in)
+### prompt-audit
 
-Set the model that handles image-bearing prompts:
-
-```json
-"imageReaderModel": "minimax/MiniMax-M3"
-```
-
-in `~/.pi/agent/settings.json` (global) or `<project>/.pi/settings.json` (project wins), then register the extension (see its README).
+No configuration.
 
 ## Adding a new extension
 

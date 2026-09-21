@@ -129,7 +129,6 @@ extended with the 40%-rule context coloring (see
 ## Development
 
 Setup, lint, and commit conventions: see
-[CONTRIBUTING.md](../../../CONTRIBUTING.md) and
 [AGENTS.md](../../../AGENTS.md). Tests: `bun test` (from this directory).
 
 ## License
