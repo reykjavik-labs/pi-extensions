@@ -20,25 +20,25 @@
 		"husky": "husky"
 	},
 	"dependencies": {
-		"@xynogen/pix-data": "0.5.1",
-		"@xynogen/pix-pretty": "1.26.0"
+		"@xynogen/pix-data": "0.5.4",
+		"@xynogen/pix-pretty": "1.30.0"
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": "*",
 		"@earendil-works/pi-tui": "*"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.14",
+		"@biomejs/biome": "2.5.15",
 		"@semantic-release/commit-analyzer": "13.0.1",
-		"@semantic-release/github": "12.0.9",
-		"@semantic-release/npm": "13.1.5",
+		"@semantic-release/github": "12.0.10",
+		"@semantic-release/npm": "13.2.0",
 		"@semantic-release/release-notes-generator": "14.1.1",
 		"@types/bun": "1.4.2",
-		"@types/node": "25.5.2",
-		"bun-types": "1.4.2",
+		"@types/node": "26.6.5",
+		"bun-types": "1.4.3",
 		"cz-conventional-changelog": "3.3.0",
 		"husky": "9.1.7",
-		"markdownlint-cli2": "0.23.2",
+		"markdownlint-cli2": "0.23.3",
 		"markdownlint-cli2-formatter-pretty": "^0.0.10",
 		"typescript": "7.0.2",
 		"@earendil-works/pi-ai": "latest",
