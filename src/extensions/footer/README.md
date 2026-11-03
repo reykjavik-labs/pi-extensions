@@ -76,30 +76,30 @@ session start. Changing the value takes effect on the next session.
   (with the token and TPS counters appended, as today).
 - If it does not fit, the footer switches to the stacked layout above.
 - Collapsing back to the single line requires the stable line to fit with an
-  8-column margin (`LAYOUT_HYSTERESIS` in `src/footer.ts`), so content that
+  8-column margin (`LAYOUT_HYSTERESIS` in `src/extensions/footer/footer.ts`), so content that
   hovers near the boundary (growing context %, git marker changes) does not
   flip the layout back and forth.
 
 ## Context usage coloring
 
-The context-usage block (`used/total (pct%)`) is colored to surface when a
-session is leaving the model's "smart zone". The rule set is selected by the
-model's context window:
+The context-usage block (`used/total (pct%)`) is colored to flag when a
+session is getting too long. The rule set depends on the model's context
+window:
 
-| Window | Green | Orange | Red |
+| Window | Green | Yellow | Red |
 |---|---|---|---|
-| `≥ 100k` | `used < 100k` | `100k ≤ used ≤ 140k` | `used > 140k` |
-| `< 100k` | `pct < 40%` | `40% ≤ pct ≤ 70%` | `pct > 70%` |
+| `> 150k` | `used < 100k` | `100k ≤ used ≤ 150k` | `used > 150k` |
+| `≤ 150k` | `pct < 50%` | `50% ≤ pct ≤ 75%` | `pct > 75%` |
+
+Edges: exactly 150,000 tokens is yellow; red starts at 150,001. Windows of 150k
+or less use the percentage rule so red stays reachable.
 
 Token count and percentage always share the same color. Thresholds are
-hardcoded module constants (`CTX_*` in `src/footer.ts`). Layout thresholds
-are the `LAYOUT_HYSTERESIS` constant in the same file.
+hardcoded module constants (`CTX_*` in `src/extensions/footer/footer.ts`).
+Layout thresholds are the `LAYOUT_HYSTERESIS` constant in the same file.
 
-**Reference:** the 40%-rule / smart-zone-dumb-zone heuristic is described in
-["La regla del 40 % de contexto: dónde vive la inteligencia de un LLM"](https://23people.io/blog/regla-40-contexto-smart-zone-dumb-zone/)
-— the model's comfort zone ends at ~40% of the window or ~100k tokens,
-whichever comes first; degradation past that point is gradual, and urgent near
-the top of the window.
+The 100k warning follows HumanLayer's guidance; 150k is Anthropic's default
+compaction point.
 
 ## Requirements
 
@@ -123,7 +123,7 @@ npm.
 
 Inspired by `pix-footer` from the
 [pix suite](https://github.com/xynogen/pix-mono), adapted for personal use and
-extended with the 40%-rule context coloring (see
+extended with context-usage coloring (see
 [Context usage coloring](#context-usage-coloring)).
 
 ## Development
