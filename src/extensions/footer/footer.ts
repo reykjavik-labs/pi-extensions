@@ -275,6 +275,7 @@ const CTX_WARN_END = 150_000;
 const CTX_PCT_OK_END = 50;
 const CTX_PCT_WARN_END = 75;
 
+// pct is the displayed (rounded) value so the label and its color agree.
 export function ctxColor(
 	used: number,
 	pct: number,
