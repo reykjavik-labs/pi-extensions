@@ -179,10 +179,15 @@ describe("ctxColor", () => {
 		expect(ctxColor(48_700, 76, 64_000)).toBe("error");
 	});
 
-	for (const contextWindow of [100_000, 128_000, 150_000]) {
+	const redReachable = [
+		{ contextWindow: 100_000, warn: 75_000, red: 76_000 },
+		{ contextWindow: 128_000, warn: 96_000, red: 97_280 },
+		{ contextWindow: 150_000, warn: 112_500, red: 114_000 },
+	];
+	for (const { contextWindow, warn, red } of redReachable) {
 		test(`red is reachable in a ${contextWindow} window`, () => {
-			expect(ctxColor(contextWindow * 0.76, 76, contextWindow)).toBe("error");
-			expect(ctxColor(contextWindow * 0.75, 75, contextWindow)).toBe("warning");
+			expect(ctxColor(red, 76, contextWindow)).toBe("error");
+			expect(ctxColor(warn, 75, contextWindow)).toBe("warning");
 		});
 	}
 });
