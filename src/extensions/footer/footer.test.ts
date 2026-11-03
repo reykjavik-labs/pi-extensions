@@ -190,4 +190,9 @@ describe("ctxColor", () => {
 			expect(ctxColor(warn, 75, contextWindow)).toBe("warning");
 		});
 	}
+
+	test("window switch: percentage rule at 150k, absolute rule above", () => {
+		expect(ctxColor(120_000, 80, 150_000)).toBe("error");
+		expect(ctxColor(120_000, 80, 150_001)).toBe("warning");
+	});
 });
