@@ -158,13 +158,13 @@ describe("compactStatus", () => {
 });
 
 describe("ctxColor", () => {
-	for (const window of [200_000, 1_000_000]) {
-		test(`absolute band edges in a ${window} window`, () => {
-			expect(ctxColor(99_999, 99, window)).toBe("success");
-			expect(ctxColor(100_000, 1, window)).toBe("warning");
-			expect(ctxColor(149_999, 1, window)).toBe("warning");
-			expect(ctxColor(150_000, 1, window)).toBe("warning");
-			expect(ctxColor(150_001, 1, window)).toBe("error");
+	for (const contextWindow of [200_000, 1_000_000]) {
+		test(`absolute band edges in a ${contextWindow} window`, () => {
+			expect(ctxColor(99_999, 99, contextWindow)).toBe("success");
+			expect(ctxColor(100_000, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(149_999, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(150_000, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(150_001, 1, contextWindow)).toBe("error");
 		});
 	}
 
@@ -179,10 +179,10 @@ describe("ctxColor", () => {
 		expect(ctxColor(48_700, 76, 64_000)).toBe("error");
 	});
 
-	for (const window of [100_000, 128_000, 150_000]) {
-		test(`red is reachable in a ${window} window`, () => {
-			expect(ctxColor(window * 0.76, 76, window)).toBe("error");
-			expect(ctxColor(window * 0.75, 75, window)).toBe("warning");
+	for (const contextWindow of [100_000, 128_000, 150_000]) {
+		test(`red is reachable in a ${contextWindow} window`, () => {
+			expect(ctxColor(contextWindow * 0.76, 76, contextWindow)).toBe("error");
+			expect(ctxColor(contextWindow * 0.75, 75, contextWindow)).toBe("warning");
 		});
 	}
 });
