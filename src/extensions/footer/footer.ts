@@ -267,33 +267,26 @@ function renderTokens(
 	return theme.fg(dim ? "dim" : "muted", s);
 }
 
-/** Context usage color zones — 40%-rule heuristics (see 23people.io blog).
- * The model's comfort zone ends at ~40% of the window or ~100k tokens,
- * whichever comes first; degradation is gradual, urgent near the top.
- * Branch on the context window so every window has a reachable red zone:
- *   window >= 100k → absolute token thresholds (100k / 140k)
- *   window < 100k  → percentage thresholds (40% / 70%)
- */
-const CTX_ABS_BRANCH_MIN_WINDOW = 100_000;
-const CTX_SMART_ZONE_END = 100_000; // tokens — green ends (branch 1)
-const CTX_DANGER_START = 140_000; // tokens — red starts (branch 1)
-const CTX_PCT_SMART_END = 40; // % of window — green ends (branch 2)
-const CTX_PCT_DANGER_START = 70; // % of window — red starts (branch 2)
+// Absolute bands (100k warns, 150k is the default compaction point) apply only
+// when the window exceeds 150k; smaller windows could never turn red on
+// tokens, so they fall back to percentages (50% / 75%).
+const CTX_OK_END = 100_000;
+const CTX_WARN_END = 150_000;
+const CTX_PCT_OK_END = 50;
+const CTX_PCT_WARN_END = 75;
 
-/** Color for the context-usage block, from the displayed (rounded) values
- * so the label and its color never disagree. */
 export function ctxColor(
 	used: number,
 	pct: number,
 	contextWindow: number,
 ): string {
-	if (contextWindow >= CTX_ABS_BRANCH_MIN_WINDOW) {
-		if (used > CTX_DANGER_START) return "error";
-		if (used >= CTX_SMART_ZONE_END) return "warning";
+	if (contextWindow > CTX_WARN_END) {
+		if (used > CTX_WARN_END) return "error";
+		if (used >= CTX_OK_END) return "warning";
 		return "success";
 	}
-	if (pct > CTX_PCT_DANGER_START) return "error";
-	if (pct >= CTX_PCT_SMART_END) return "warning";
+	if (pct > CTX_PCT_WARN_END) return "error";
+	if (pct >= CTX_PCT_OK_END) return "warning";
 	return "success";
 }
 
