@@ -158,29 +158,41 @@ describe("compactStatus", () => {
 });
 
 describe("ctxColor", () => {
-	test("branch 1 (window >= 100k) uses absolute token thresholds", () => {
-		expect(ctxColor(99_999, 50, 200_000)).toBe("success");
-		expect(ctxColor(100_000, 50, 200_000)).toBe("warning");
-		expect(ctxColor(140_000, 70, 200_000)).toBe("warning");
-		expect(ctxColor(140_001, 71, 200_000)).toBe("error");
-		// the percentage thresholds are ignored on this branch
-		expect(ctxColor(80_000, 40, 200_000)).toBe("success");
+	for (const contextWindow of [200_000, 1_000_000]) {
+		test(`absolute band edges in a ${contextWindow} window`, () => {
+			expect(ctxColor(99_999, 99, contextWindow)).toBe("success");
+			expect(ctxColor(100_000, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(149_999, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(150_000, 1, contextWindow)).toBe("warning");
+			expect(ctxColor(150_001, 1, contextWindow)).toBe("error");
+		});
+	}
+
+	test("high pct stays green below 100k in a large window", () => {
+		expect(ctxColor(90_000, 90, 200_000)).toBe("success");
 	});
 
-	test("branch 2 (window < 100k) uses percentage thresholds", () => {
-		expect(ctxColor(25_599, 39, 64_000)).toBe("success");
-		expect(ctxColor(25_600, 40, 64_000)).toBe("warning");
-		expect(ctxColor(44_800, 70, 64_000)).toBe("warning");
-		expect(ctxColor(44_801, 71, 64_000)).toBe("error");
+	test("percentage edges in a 64k window", () => {
+		expect(ctxColor(31_000, 49, 64_000)).toBe("success");
+		expect(ctxColor(32_000, 50, 64_000)).toBe("warning");
+		expect(ctxColor(48_000, 75, 64_000)).toBe("warning");
+		expect(ctxColor(48_700, 76, 64_000)).toBe("error");
 	});
 
-	test("exactly 100k window falls into branch 1, red unreachable", () => {
-		expect(ctxColor(99_999, 99, 100_000)).toBe("success");
-		expect(ctxColor(100_000, 100, 100_000)).toBe("warning");
-	});
+	const redReachable = [
+		{ contextWindow: 100_000, warn: 75_000, red: 76_000 },
+		{ contextWindow: 128_000, warn: 96_000, red: 97_280 },
+		{ contextWindow: 150_000, warn: 112_500, red: 114_000 },
+	];
+	for (const { contextWindow, warn, red } of redReachable) {
+		test(`red is reachable in a ${contextWindow} window`, () => {
+			expect(ctxColor(red, 76, contextWindow)).toBe("error");
+			expect(ctxColor(warn, 75, contextWindow)).toBe("warning");
+		});
+	}
 
-	test("exactly 140k window falls into branch 1, red unreachable", () => {
-		expect(ctxColor(139_999, 99, 140_000)).toBe("warning");
-		expect(ctxColor(140_000, 100, 140_000)).toBe("warning");
+	test("window switch: percentage rule at 150k, absolute rule above", () => {
+		expect(ctxColor(120_000, 80, 150_000)).toBe("error");
+		expect(ctxColor(120_000, 80, 150_001)).toBe("warning");
 	});
 });
