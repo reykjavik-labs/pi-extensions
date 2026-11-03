@@ -77,9 +77,9 @@ session start. Changing the value takes effect on the next session.
 - If it does not fit, the footer switches to the stacked layout above.
 - Collapsing back to the single line requires the stable line to fit with an
   8-column margin (`LAYOUT_HYSTERESIS` in
-  `src/extensions/footer/footer.ts`), so content that
-  hovers near the boundary (growing context %, git marker changes) does not
-  flip the layout back and forth.
+  `src/extensions/footer/footer.ts`), so content that hovers near the
+  boundary (growing context %, git marker changes) does not flip the layout
+  back and forth.
 
 ## Context usage coloring
 
